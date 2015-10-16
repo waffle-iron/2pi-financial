@@ -1,8 +1,7 @@
 venv/
+reference/
 .DS_Store
 *~
 *.pyc
 .sass-cache
-application/static/stylesheets/
-application/static/webassets-external/
-.webassets-cache
+

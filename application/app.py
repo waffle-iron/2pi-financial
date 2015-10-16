@@ -19,19 +19,19 @@ app.jinja_env.globals['static'] = (
 assets = Environment(app)
 assets.url_expire = False
 assets.debug = app.config['ENV'] == 'development'
-assets.load_path = ['%s/assets' % app.config.root_path]
+assets.load_path = ['%s/static' % app.config.root_path]
 
 assets.register('css',
     Bundle(
-      'stylesheets/**/*.css',
-      Bundle(
-        'stylesheets/*.scss',
-        filters='pyscss',
-        output='stylesheets/app.%(version)s.css'),
+      'css/**/*.css',
+      'css/*.css',
+        # Bundle( 'css/*.scss', filters='pyscss', output='stylesheets/app.%(version)s.css'),
       output='stylesheets/all.%(version)s.css'))
 
 assets.register('js', Bundle(
+    'js/vendor/jquery/jquery.js',
     'js/**/*.js',
+    'js/*.js',
     output='js/app.%(version)s.js'))
 
 # Configure the database

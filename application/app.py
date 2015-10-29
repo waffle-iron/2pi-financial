@@ -1,10 +1,19 @@
 from flask import Flask, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask.ext.assets import Environment, Bundle
+from flask.ext.login import LoginManager, UserMixin, login_required
 from models import Base, User
 import os
 
+import logging
+
 app = Flask(__name__)
+
+# Set up logging
+file_handler = logging.FileHandler('app.log')
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.INFO)
+
 
 env = os.environ.get('FLASK_ENV', 'development')
 app.config['ENV'] = env
@@ -37,6 +46,38 @@ assets.register('js', Bundle(
 # Configure the database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@localhost:1111/development'
 db = SQLAlchemy(app)
+
+
+
+
+# Login manager
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get(user_id)
+    
+@login_manager.request_loader
+def load_user(request):
+    token = request.headers.get('Authorization')
+    if token is None:
+        token = request.args.get('token')
+
+    if token is not None:
+        username,password = token.split(":") # naive token
+        user_entry = User.get(username)
+        if (user_entry is not None):
+            user = User(user_entry[0],user_entry[1])
+            if (user.password == password):
+                return user
+    return None
+
+    
+    
+    
+    
+
 
 @app.before_first_request
 def setup():

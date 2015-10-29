@@ -1,3 +1,8 @@
+function select_cohort_changed(){
+    document.getElementById("select-changed").value = "yes";
+    document.getElementById("demo_sidebar").submit();
+}
+
 jQuery(function($) {
 
 	//#main-slider

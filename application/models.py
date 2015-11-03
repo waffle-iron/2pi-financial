@@ -3,6 +3,25 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from application import db
 
 
+class CustomDemoIP(db.Model):
+    __tablename__ = 'custom_demo_users'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ip_address = db.Column(db.String(255), index=True)
+    
+    def get_id(self):
+        try:
+            return unicode(self.id) 
+        except NameError:
+            return str(self.id) 
+            
+    def __repr__(self):
+        return '<CustomDemoIP %d -- %s>' % (self.id, self.ip_address)
+        
+    def __init__(self, ip_addr):
+        self.ip_address = ip_addr
+        
+        
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     
@@ -11,6 +30,7 @@ class User(UserMixin, db.Model):
     pw_hash = db.Column(db.String(255))
     name = db.Column(db.String(255))
     is_demo = db.Column(db.Boolean, default=False)
+    is_custom = db.Column(db.Boolean, default=False)
     active = db.Column(db.Boolean)
     confirmed_at = db.Column(db.DateTime)
     
@@ -45,7 +65,7 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.pw_hash, password)
         
-    def __init__(self, email=None, password=None, name=None, is_demo=False):
+    def __init__(self, email=None, password=None, name=None, is_demo=False, is_custom=False):
         self.email = email
         self.set_password(password)
         if name is None:
@@ -53,5 +73,6 @@ class User(UserMixin, db.Model):
         else:
             self.name = name
         self.is_demo = is_demo
+        self.is_custom = is_custom
         
         

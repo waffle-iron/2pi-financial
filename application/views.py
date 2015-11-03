@@ -2,7 +2,7 @@ from flask import render_template, request, url_for, redirect, current_app, json
 from flask.ext.login import login_user, logout_user, current_user, login_required
 from application import app, nav, db, login_manager
 from .forms import LoginForm, RegistrationForm
-from .models import User
+from .models import User, CustomDemoIP
 
 import re
 from collections import defaultdict
@@ -48,15 +48,9 @@ def get_demo_sample_assets(user, form_dict = None):
     """
     TODO: query the database
     """    
-    account_cats = ['Banking', 'Brokerage', '401(k)', 'Real Assets']
-    
-    default_assets = {
-        'Banking': ['Savings'],
-        'Brokerage': ['Money Market (1%)', 'AAPL'],
-        '401(k)': ['SPY', 'EEM'],
-        'Real Assets': ['House', 'Mortgage']
-    }
-    
+    account_cats = get_demo_account_categories()
+    default_assets = get_demo_account_default_assets()
+        
     # Determine the assets for the given user id
     if user.email == 'ywp@demo.com':
         asset_values = {
@@ -127,15 +121,73 @@ def get_demo_sample_assets(user, form_dict = None):
     
     return account_categories
     
-   
-def get_demo_accounts():
-    return User.query.filter(User.is_demo == True).all()
+def make_custom_demo_account(form_dict, ip_addr):
+    
+    account_cats = get_demo_account_categories()
+    default_assets = get_demo_account_default_assets()
+
+    if form_dict is None:
+        raise Exception("Missing form data") #TODO: change this
+        
+    # Load in the values for each of the assets in order
+    asset_keys = sorted([key for key in form_dict if re.match("input_\d_\d", key)])
+    # Convert the text in the boxes to integers
+    custom_assets_values = [int(form_dict.get(asset_key, 0)) for asset_key in asset_keys]
+    
+    # Set all assets to default assets so we know the names, etc.
+    asset_values = defaultdict(list)
+    for account_cat in account_cats:
+        default_assets_cat = default_assets.get(account_cat)
+        assets = []
+        for asset_name in default_assets_cat:
+            asset_values[account_cat].append( (asset_name, custom_assets_values.pop(0)) )
+            
+    custom_demo_ip = CustomDemoIP(ip_addr)
+    db.session.add(custom_demo_ip)
+    db.session.commit()
+    
+    # app.logger.info('Custom user id: %s' %str(custom_demo_ip.get_id()))
+    
+    new_custom_id = custom_demo_ip.get_id()
+    # TODO: remove these hardcodes
+    new_custom_user = User('custom%s@customdemo.com' %str(new_custom_id), 
+                                                'demo123', 'Custom', is_demo=True, is_custom=True)
+    
+    db.session.add(new_custom_user)
+    db.session.commit()
+    
+    return new_custom_user.get_id()
+    
+    
+    
+#
+# DATA ACCESS
+#
+    
+def get_demo_account_categories():
+    return ['Banking', 'Brokerage', '401(k)', 'Real Assets']
+    
+def get_demo_account_default_assets():
+    default_assets = {
+        'Banking': ['Savings'],
+        'Brokerage': ['Money Market (1%)', 'AAPL'],
+        '401(k)': ['SPY', 'EEM'],
+        'Real Assets': ['House', 'Mortgage']
+    }
+    return default_assets
+    
+def get_demo_accounts(include_custom = False):
+    return User.query.filter(User.is_demo == True, User.is_custom == include_custom).all()
     
 def get_user_by_id(user_id):
     return User.query.get(user_id)
    
 def get_user_by_email(email):
     return User.query.filter(User.email == email).first()
+    
+    
+    
+    
     
 @app.route('/demo', methods = ['GET', 'POST'])
 # TODO: needs much better user handling
@@ -149,16 +201,18 @@ def demo():
         if form_dict.get('select-changed') == 'yes':
             user_id = form_dict.get('select-cohort')
         else:
-            user_id = get_user_by_email('custom@demo.com').get_id()
+            ip_addr = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
+            user_id = make_custom_demo_account(form_dict, ip_addr)
             
     else:
         form_dict = None
+        # on the demo page, default to young working professional
         user_id = get_user_by_email('ywp@demo.com').get_id()
         
      # Log in the demo user
     user = get_user_by_id(user_id)
     login_user(user, remember=False)
-
+    
     # Get the account assets for plotting
     account_categories = get_demo_sample_assets(current_user, form_dict)
     

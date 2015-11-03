@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block body %}
+
+  <form action="" method="post" name="login" class="form-horizontal">
+    {{ form.hidden_tag() }}
+    <h2>Signin </h2>
+    <div class="control-group">
+        <div class="controls">
+        {{ form.email }}
+        </div>
+    </div>
+ 
+    <div class="control-group">
+        <div class="controls">
+        {{ form.password }}
+        </div>
+        <div class="errors">
+          {% for error in form.email.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+          {% endfor %}<br>
+          {% for error in form.password.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+          {% endfor %}<br>
+        </div>
+    </div>
+ 
+    <div>{{ form.remember_me }} Remember Me</div>
+    
+    <div class="control-group">
+        <div class="controls">
+          <button type="submit" class="btn btn-success">Signin</button>
+        </div>
+    </div>
+  </form>
+  
+{% endblock %}

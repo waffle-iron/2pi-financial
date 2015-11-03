@@ -6,9 +6,9 @@
         </div>
         <select class="form-control" data-width="auto" id="select-cohort" name="select-cohort" onchange="select_cohort_changed()">
         
-          {% for act_id, act_label in sample_accounts.iteritems() %}
-           <option value="{{ act_id }}" {% if user_id == act_id %} selected = "selected" {% endif %}> 
-            {{ act_label }} 
+          {% for demo_user in demo_accounts %}
+           <option value="{{ demo_user.id }}" {% if user_id == demo_user.id %} selected = "selected" {% endif %}> 
+            {{ demo_user.name }} 
           </option>
           {% endfor %}
           

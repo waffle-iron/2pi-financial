@@ -19,13 +19,17 @@
     <link rel="apple-touch-icon-precomposed" sizes="114x114" href="{{ static('img/ico/apple-touch-icon-114-precomposed.png') }}">
     <link rel="apple-touch-icon-precomposed" sizes="72x72" href="{{ static('img/ico/apple-touch-icon-72-precomposed.png') }}">
     <link rel="apple-touch-icon-precomposed" href="{{ static('img/ico/apple-touch-icon-57-precomposed.png') }}">
+        
+    {% assets "js" %}
+      <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+    {% endassets %}
     
 </head>
 <body>
     <!--[if lt IE 7]>
         <p class="chromeframe">You are using an outdated browser. <a href="http://browsehappy.com/">Upgrade your browser today</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to better experience this site.</p>
     <![endif]-->
-
+    
     <header class="navbar navbar-inverse navbar-fixed-top wet-asphalt" role="banner">
         <div class="container">
             <div class="navbar-header">
@@ -40,16 +44,33 @@
             
             <div class="collapse navbar-collapse">
                 <ul class="nav navbar-nav navbar-right">
-                    <li class="active"><a href="{{ url_for('home') }}">Home</a></li> <!--Make "active" a templated thing -->
-                    <li><a href="{{ url_for('demo') }}">Demo</a></li> 
-                    <li><a href="{{ url_for('home') }}">About Us</a></li>
-                    <li><a href="{{ url_for('home') }}">FAQ</a></li>
-                    <li><a href="{{ url_for('home') }}">Contact Us</a></li>
+                    {% if current_user.is_authenticated %}
+                      {% for item in nav.loggedin %}
+                      <li class="{{ 'active' if item.is_active else '' }}">
+                          <a href="{{ item.url }}">{{ item.label }}</a>
+                      </li>
+                      {% endfor %}
+                    {% else %}
+                      {% for item in nav.loggedout %}
+                      <li class="{{ 'active' if item.is_active else '' }}">
+                          <a href="{{ item.url }}">{{ item.label }}</a>
+                      </li>
+                      {% endfor %}
+                  {% endif %}
                 </ul>
             </div>
         </div>
     </header><!--/header-->
     
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul>
+        {% for message in messages %}
+            <li>{{ message }} </li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
     
     <div class="container">
     {% block body %}
@@ -76,11 +97,7 @@
       </div>
     </footer><!--/#footer-->
 
-    
-    {% assets "js" %}
-      <script type="text/javascript" src="{{ ASSET_URL }}"></script>
-    {% endassets %}
-
+   
     <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
     <script>
         var _gaq=[['_setAccount','UA-XXXXX-X'],['_trackPageview']];

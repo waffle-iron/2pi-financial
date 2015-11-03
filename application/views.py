@@ -1,18 +1,54 @@
-from flask import render_template, request, url_for, redirect, current_app
-from .app import app
+from flask import render_template, request, url_for, redirect, current_app, jsonify, flash, session, g
+from flask.ext.login import login_user, logout_user, current_user, login_required
+from application import app, nav, db, login_manager
+from .forms import LoginForm, RegistrationForm
+from .models import User
 
 import re
 from collections import defaultdict
 
+nav.Bar('loggedin', [
+    nav.Item('Home', 'home'),
+    nav.Item('Demo', 'demo'),
+    nav.Item('Logout', 'logout')
+])
+
+nav.Bar('loggedout', [
+    nav.Item('Demo', 'demo'),
+    nav.Item('Login', 'login'),
+    nav.Item('Register', 'register')
+])
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)
+    
+@app.before_request
+def before_request():
+    g.user = current_user
+    
+    
 @app.route('/')
 def home():
     return render_template('home.html')
    
 
+@app.route('/chart_data.json')
+def chart_data():
+
+    user_id = 'ywp'
+    account_categories = get_demo_sample_assets(user_id)
+
+    return jsonify(results = account_categories)
+    
+    
 def get_demo_sample_assets(user_id, form_dict = None):
     """
     TODO: query the database
     """
+    user = get_user_by_id(user_id)
+    
     account_cats = ['Banking', 'Brokerage', '401(k)', 'Real Assets']
     
     default_assets = {
@@ -21,9 +57,9 @@ def get_demo_sample_assets(user_id, form_dict = None):
         '401(k)': ['SPY', 'EEM'],
         'Real Assets': ['House', 'Mortgage']
     }
-        
+    
     # Determine the assets for the given user id
-    if user_id == 'ywp':
+    if user.email == 'ywp@demo.com':
         asset_values = {
             'Banking': [('Savings', 60000)],
             'Brokerage': [('Money Market (1%)', 20000), ('AAPL', 10000)],
@@ -31,7 +67,7 @@ def get_demo_sample_assets(user_id, form_dict = None):
             'Real Assets': [('House', 200000), ('Mortgage', -150000)]
         }
         
-    elif user_id == 'nr':
+    elif user.email == 'nr@demo.com':
         asset_values = {
             'Banking': [('Savings', 600000)],
             'Brokerage': [('Money Market (1%)', 200000), ('AAPL', 100000)],
@@ -39,7 +75,7 @@ def get_demo_sample_assets(user_id, form_dict = None):
             'Real Assets': [('House', 2000000), ('Mortgage', -1500000)]
         }
         
-    elif user_id == 'fof':
+    elif user.email == 'fof@demo.com':
         asset_values = {
             'Banking': [('Savings', 500000)],
             'Brokerage': [('Money Market (1%)', 200000), ('AAPL', 100000)],
@@ -47,7 +83,7 @@ def get_demo_sample_assets(user_id, form_dict = None):
             'Real Assets': [('House', 2000000), ('Mortgage', -1500000)]
         }
         
-    elif user_id == 'custom':
+    elif user.email == 'custom@demo.com':
     
         if form_dict is None:
             raise Exception("Missing form data") #TODO: change this
@@ -68,7 +104,7 @@ def get_demo_sample_assets(user_id, form_dict = None):
         # TODO: save these custom asset values down, so that we can examine our userbase
         
     else:
-         raise Exception("Unknown user id: %s" %str(user_id)) #TODO: change this
+         raise Exception("Unknown user id: %s" %str(user_id)) #TODO: change this (handle users)
        
     account_categories = []
     for acct_ndx in range(len(account_cats)):
@@ -93,46 +129,89 @@ def get_demo_sample_assets(user_id, form_dict = None):
     return account_categories
     
    
+def get_demo_accounts():
+    return User.query.filter(User.is_demo == True).all()
+    
+def get_user_by_id(user_id):
+    return User.query.get(user_id)
+   
+def get_user_by_email(email):
+    return User.query.filter(User.email == email).first()
+    
 @app.route('/demo', methods = ['GET', 'POST'])
+# TODO: needs much better user handling
 def demo():
     # app.logger.info('demo')
     
     if request.method == 'POST':
         form_dict = request.form
     
-        app.logger.info(request.form['select-changed'])
+        # app.logger.info('Select field changed: %s' % request.form['select-changed'])
         if form_dict.get('select-changed') == 'yes':
             user_id = form_dict.get('select-cohort')
         else:
-            user_id = 'custom'
+            user_id = get_user_by_email('custom@demo.com').get_id()
             
         account_categories = get_demo_sample_assets(user_id, form_dict)
             
     else:
-        user_id = 'ywp'
+        user_id = get_user_by_email('ywp@demo.com').get_id()
         account_categories = get_demo_sample_assets(user_id)
+        
+    # app.logger.info('Demo user id: %s' %str(user_id))
     
-    # add up the net worth from the assets
+    # Add up the net worth from the assets
     net_worth = 0
     for account_cat  in account_categories:
         for asset in account_cat.get('assets'):
             net_worth += asset.get('amount', 0)
     
-    sample_accounts = {
-        'ywp': 'Young working professional',
-        'fof': 'Family of 4',
-        'nr': 'Nearing retirement',
-        'custom': 'Custom'}
-    
+    demo_accounts =  get_demo_accounts()
+        
     kwargs = {
         'account_categories': account_categories, 
-        'sample_accounts': sample_accounts,
-        'user_id': user_id,
+        'demo_accounts': demo_accounts,
+        'user_id': int(user_id),
         'net_worth': net_worth
     }
     
     return render_template('demo.html', **kwargs)
 
+    
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        user = User()
+        form.populate_obj(user)
+        db.session.add(user)
+        db.session.commit()
+        return redirect(url_for('login'))
+    return render_template('register.html', form=form)
+ 
+@app.route('/login',methods=['GET','POST'])
+def login():
+    # If a user is already logged in
+    if g.user is not None and g.user.is_authenticated:
+        return redirect(url_for('home'))
+        
+    form = LoginForm()
+    if form.validate_on_submit():
+        session['remember_me'] = form.remember_me.data
+        
+        login_user(form.user, remember=form.remember_me.data)
+        
+        flash('Login successful for email="%s"' % form.email.data)
+        
+        return redirect(request.args.get('next') or url_for('home')) 
+        
+    return render_template('login.html',  form=form)
+    
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login')) 
     
 # @app.route('/contact')
 # def about():
@@ -145,8 +224,7 @@ def demo():
 # @app.route('/about')
 # def about():
     # return render_template('about.html')
-    
-    
+        
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404

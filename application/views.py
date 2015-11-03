@@ -36,19 +36,18 @@ def home():
 
 @app.route('/chart_data.json')
 def chart_data():
-
-    user_id = 'ywp'
-    account_categories = get_demo_sample_assets(user_id)
+    """
+    Output the data required to make the charts
+    """
+    account_categories = get_demo_sample_assets(current_user)
 
     return jsonify(results = account_categories)
     
     
-def get_demo_sample_assets(user_id, form_dict = None):
+def get_demo_sample_assets(user, form_dict = None):
     """
     TODO: query the database
-    """
-    user = get_user_by_id(user_id)
-    
+    """    
     account_cats = ['Banking', 'Brokerage', '401(k)', 'Real Assets']
     
     default_assets = {
@@ -104,7 +103,7 @@ def get_demo_sample_assets(user_id, form_dict = None):
         # TODO: save these custom asset values down, so that we can examine our userbase
         
     else:
-         raise Exception("Unknown user id: %s" %str(user_id)) #TODO: change this (handle users)
+         raise Exception("Unknown user email: %s" %user.email) #TODO: change this (handle users)
        
     account_categories = []
     for acct_ndx in range(len(account_cats)):
@@ -152,13 +151,18 @@ def demo():
         else:
             user_id = get_user_by_email('custom@demo.com').get_id()
             
-        account_categories = get_demo_sample_assets(user_id, form_dict)
-            
     else:
+        form_dict = None
         user_id = get_user_by_email('ywp@demo.com').get_id()
-        account_categories = get_demo_sample_assets(user_id)
         
-    # app.logger.info('Demo user id: %s' %str(user_id))
+     # Log in the demo user
+    user = get_user_by_id(user_id)
+    login_user(user, remember=False)
+
+    # Get the account assets for plotting
+    account_categories = get_demo_sample_assets(current_user, form_dict)
+    
+    # app.logger.info('Demo user id: %s' %str(current_user.email))
     
     # Add up the net worth from the assets
     net_worth = 0

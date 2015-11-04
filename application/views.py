@@ -1,11 +1,18 @@
 from flask import render_template, request, url_for, redirect, current_app, jsonify, flash, session, g
 from flask.ext.login import login_user, logout_user, current_user, login_required
 from application import app, nav, db, login_manager
+
+from sqlalchemy import func
+
 from .forms import LoginForm, RegistrationForm
-from .models import User, CustomDemoIP
+
+from .models import User, CustomDemoIP, Asset, AssetPosition, AccountCategory, Account, UserAccount
 
 import re
 from collections import defaultdict
+
+# TODO: comments
+# TODO: sort accounts
 
 nav.Bar('loggedin', [
     nav.Item('Home', 'home'),
@@ -48,6 +55,7 @@ def get_demo_sample_assets(user, form_dict = None):
     """
     TODO: query the database
     """    
+    
     account_cats = get_demo_account_categories()
     default_assets = get_demo_account_default_assets()
         
@@ -130,17 +138,17 @@ def make_custom_demo_account(form_dict, ip_addr):
         raise Exception("Missing form data") #TODO: change this
         
     # Load in the values for each of the assets in order
-    asset_keys = sorted([key for key in form_dict if re.match("input_\d_\d", key)])
+    account_keys = sorted([key for key in form_dict if re.match("input_\d_\d", key)])
     # Convert the text in the boxes to integers
-    custom_assets_values = [int(form_dict.get(asset_key, 0)) for asset_key in asset_keys]
+    custom_accounts_values = [float(form_dict.get(account_key, 0)) for account_key in account_keys]
     
     # Set all assets to default assets so we know the names, etc.
-    asset_values = defaultdict(list)
+    account_values = defaultdict(list)
     for account_cat in account_cats:
         default_assets_cat = default_assets.get(account_cat)
         assets = []
         for asset_name in default_assets_cat:
-            asset_values[account_cat].append( (asset_name, custom_assets_values.pop(0)) )
+            account_values[account_cat].append( (asset_name, custom_accounts_values.pop(0)) )
             
     custom_demo_ip = CustomDemoIP(ip_addr)
     db.session.add(custom_demo_ip)
@@ -185,8 +193,61 @@ def get_user_by_id(user_id):
 def get_user_by_email(email):
     return User.query.filter(User.email == email).first()
     
+def get_user_account_summary(user):
+    # TODO: fix query
+    out = db.session.query(
+            UserAccount.id.label('id'),
+            Account.account_name.label('account_name'),
+            AccountCategory.account_category_name.label('account_category_name'),
+            func.sum(AssetPosition.value).label('value')). \
+        join(AssetPosition). \
+        join(Account). \
+        join(AccountCategory). \
+        group_by(UserAccount, Account, AccountCategory). \
+        filter(UserAccount.user_id == user.id). \
+        all()
+          
+    return out
     
     
+def configure_account_category_output(user_account_summary):
+
+    # Get the unique categories
+    account_cats = list(set([a_summary.account_category_name for a_summary in user_account_summary]))
+     
+    account_categories = []
+    for acct_cat_ndx in range(len(account_cats)):
+        
+        account_cat = account_cats[acct_cat_ndx]
+    
+        accounts = [(a_summary.account_name, a_summary.value) for a_summary in user_account_summary
+                                if a_summary.account_category_name == account_cat]
+        
+        out_account_list = [{
+                'label': accounts[acct_ndx][0],
+                'id': 'input_%d_%d' %(acct_cat_ndx, acct_ndx),
+                'value':  accounts[acct_ndx][1]
+            } for acct_ndx in range(len(accounts))]
+        
+        account_category = {
+            'heading': account_cat,
+            'heading_id': 'account_cat_head_%d' %acct_cat_ndx,
+            'id': 'account_cat_%d' %acct_cat_ndx,
+            'account_sum': sum([a.get('value') for a in out_account_list]),
+            'accounts': out_account_list
+        }
+        account_categories.append(account_category)
+    
+    return account_categories
+    
+    
+    
+def calculate_user_networth(user_account_summary):
+    networth = 0
+    for act in user_account_summary:
+        networth += act.value
+        
+    return networth
     
     
 @app.route('/demo', methods = ['GET', 'POST'])
@@ -214,21 +275,22 @@ def demo():
     login_user(user, remember=False)
     
     # Get the account assets for plotting
-    account_categories = get_demo_sample_assets(current_user, form_dict)
+    # account_categories = get_demo_sample_assets(current_user, form_dict)
+    user_accounts = get_user_account_summary(current_user)
     
     # app.logger.info('Demo user id: %s' %str(current_user.email))
     
     # Add up the net worth from the assets
-    net_worth = 0
-    for account_cat  in account_categories:
-        for asset in account_cat.get('assets'):
-            net_worth += asset.get('amount', 0)
+    net_worth = calculate_user_networth(user_accounts)
     
-    demo_accounts =  get_demo_accounts()
-        
+    # Transform the user account summary into HTML readable fields
+    account_categories = configure_account_category_output(user_accounts)
+    
+    demo_users =  get_demo_accounts()
+    
     kwargs = {
         'account_categories': account_categories, 
-        'demo_accounts': demo_accounts,
+        'demo_users': demo_users,
         'user_id': int(user_id),
         'net_worth': net_worth
     }

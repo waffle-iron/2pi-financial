@@ -6,9 +6,9 @@
         </div>
         <select class="form-control" data-width="auto" id="select-cohort" name="select-cohort" onchange="select_cohort_changed()">
         
-          {% for demo_user in demo_accounts %}
+          {% for demo_user in demo_users %}
            <option value="{{ demo_user.id }}" {% if user_id == demo_user.id %} selected = "selected" {% endif %}> 
-            {{ demo_user.name }} 
+            {{ demo_user.user_name }} 
           </option>
           {% endfor %}
           
@@ -26,7 +26,7 @@
                     {{ account_cat.heading }}
                     </div>
                     <div class="col-xs-6 text-right">
-                    {{ account_cat.asset_sum }}
+                    {{ account_cat.account_sum }}
                     </div>
                   </div>
                 </a>
@@ -35,14 +35,14 @@
             
             <div id="{{ account_cat.id }}" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="{{ account_cat.heading_id }}" aria-expanded="true">
               <ul class="list-group">
-              {% for asset in account_cat.assets %}
+              {% for account in account_cat.accounts %}
                 <li>
                   
                   <div class="form-group">
-                    <label for="{{ asset.id }}" class="control-label">{{ asset.label }}</label>
+                    <label for="{{ account.id }}" class="control-label">{{ account.label }}</label>
                     <div class="input-group">
                       <span class="input-group-addon">$</span>
-                      <input type="number" class="form-control" id="{{ asset.id }}" name="{{ asset.id }}" value="{{ asset.amount }}">
+                      <input type="number" class="form-control" id="{{ account.id }}" name="{{ account.id }}" value="{{ account.value }}">
                     </div>
                   </div>
                   

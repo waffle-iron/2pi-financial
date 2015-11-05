@@ -81,6 +81,16 @@ def setup():
         ('custom@demo.com', 'demo123', 'Custom')        
     ]
     
+    demo_assets = {
+        'savings_demo1': {'asset_name': 'savings_demo1', 'asset_class': 'Cash', 'is_demo': True},
+        'moneymarket_demo1': {'asset_name': 'moneymarket_demo1', 'asset_class': 'Cash', 'is_demo': True},
+        'aapl_demo1': {'asset_name': 'aapl_demo1', 'asset_class': 'US Equity', 'is_demo': True},
+        'spy_demo1': {'asset_name': 'spy_demo1', 'asset_class': 'US Equity', 'is_demo': True},
+        'eem_demo1': {'asset_name': 'eem_demo1', 'asset_class': 'EM Equity', 'is_demo': True},
+        'house_demo1': {'asset_name': 'house_demo1', 'asset_class': 'Real Estate', 'is_demo': True},
+        'mortgage_demo1': {'asset_name': 'mortgage_demo1', 'asset_class': 'Real Estate', 'is_demo': True}   
+    }
+    
     demo_positions = {
         'ywp@demo.com': {
             'Banking': {'Savings':  [('savings_demo1', 60000)]},
@@ -149,7 +159,8 @@ def setup():
                     asset = db.session.query(Asset).filter(Asset.asset_name == asset_name).first()
                     if not asset:
                         # app.logger.info('Adding asset: %s' %asset_name)
-                        asset = create_new_demo_asset(asset_name)
+                        asset_info = demo_assets.get(asset_name)
+                        asset = create_new_demo_asset(**asset_info)
 
                     # Now that the position is properly instantiated, add it to the user account's positions
                     new_position = AssetPosition(asset, position_value)

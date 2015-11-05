@@ -2,10 +2,8 @@
 {% block body %}
 
 <div class="testBlock"><svg id="test1"></svg></div>
-<div class="testBlock"><svg id="test2"></svg></div>
 
 <script>
-
 var testdata = [
     {key: "One", y: 5},
     {key: "Two", y: 2},
@@ -28,14 +26,15 @@ nv.addGraph(function() {
                 return values.key + ':' + values.value;
             })
             ;
-    d3.select("#test1")
-            .datum([testdata])
+    d3.select(reference_id)
+            .datum(json_data)
             .transition().duration(1200)
             .attr('width', width)
             .attr('height', height)
             .call(chart);
     return chart;
 });
+
 
 </script>
 

@@ -12,6 +12,9 @@ import re
 
 # TODO: comments
 # TODO: sort accounts
+# TODO: optimize queries
+
+# NOTE: how do we deal with negative values in the pie
 
 nav.Bar('loggedin', [
     nav.Item('Home', 'home'),
@@ -40,14 +43,20 @@ def home():
     return render_template('home.html')
    
 
+
+def query_result_to_dict(q_result):
+    return [dict(zip(row.keys(), row)) for row in q_result]
+   
+
 @app.route('/chart_data.json')
 def chart_data():
     """
     Output the data required to make the charts
     """
-    account_categories = get_demo_sample_assets(current_user)
-
-    return jsonify(results = account_categories)
+    asset_class_summary = get_user_asset_class_summary(current_user)        
+    asset_class_summary = query_result_to_dict(asset_class_summary)
+        
+    return jsonify(asset_class_summary = asset_class_summary)
     
     
     
@@ -76,8 +85,25 @@ def get_user_by_id(user_id):
 def get_user_by_email(email):
     return User.query.filter(User.email == email).first()
     
+def get_default_custom_demo_user():
+    return get_user_by_email('custom@demo.com')
+    
+def get_user_asset_class_summary(user):
+
+    app.logger.info("Getting asset class summary for: %s -- %s" %(user.email, str(user.id)))
+
+    out = db.session.query(
+        Asset.asset_class.label('asset_class'),
+        func.sum(AssetPosition.value).label('value')). \
+    join(AssetPosition). \
+    join(UserAccount). \
+    group_by(Asset.asset_class). \
+    filter(UserAccount.user_id == user.id). \
+    all()
+    
+    return out
+
 def get_user_account_summary(user):
-    # TODO: fix query
     out = db.session.query(
             UserAccount.id.label('id'),
             Account.id.label('account_id'),
@@ -93,13 +119,28 @@ def get_user_account_summary(user):
         all()
           
     return out
+ 
+def get_user_positions(user):
     
+    app.logger.info("Getting positions for: %s -- %s" %(user.email, str(user.id)))
+
+    out = db.session.query(
+            AssetPosition,
+            Asset,
+            UserAccount.account_id,
+            UserAccount.user_id). \
+        join(Asset). \
+        join(UserAccount). \
+        filter(UserAccount.user_id == user.id). \
+        all()
+    app.logger.info(out[0].keys())
+    return out
+
+ 
 def get_custom_demo_asset(custom_demo_asset_name = 'Demo'):
     demo_asset = db.session.query(Asset).\
-        filter(Asset.asset_name == custom_demo_asset_name, Asset.asset_class == 'Demo').\
+        filter(Asset.asset_name == custom_demo_asset_name).\
         first()
-    if not demo_asset:
-        demo_asset = create_new_demo_asset(custom_demo_asset_name)
     return(demo_asset)    
     
 def make_custom_demo_user(form_dict, ip_addr):
@@ -114,8 +155,12 @@ def make_custom_demo_user(form_dict, ip_addr):
     custom_demo_ip = CustomDemoIP(ip_addr)
     db.session.add(custom_demo_ip)
     db.session.commit()
-      
+    
     # app.logger.info('Custom user id: %s' %str(custom_demo_ip.id))
+    
+    default_custom_user = get_default_custom_demo_user()
+    
+    default_custom_user_positions = get_user_positions(default_custom_user)
     
     new_custom_id = custom_demo_ip.id
     # TODO: remove these hardcodes
@@ -139,12 +184,20 @@ def make_custom_demo_user(form_dict, ip_addr):
         acct_value = int(float(form_dict.get(acct_key, 0)))
         
         # Get the generic demo asset
+        # TODO: mirror the asset to accounts for the custom user
         demo_asset = get_custom_demo_asset()
         
-        new_position = AssetPosition(demo_asset, acct_value)
-        db.session.add(new_position)
+        # Add in the positions according to the default custom user
+        new_positions = []
+        for def_pos in default_custom_user_positions:
+            if def_pos.account_id == account_id:
+                new_position = AssetPosition(def_pos.Asset, acct_value)
+                new_positions.append(new_position)
+                
+        if len(new_positions) > 1:
+            raise Exception("There were more than 1 asset assigned to an account for a custom demo user.")
         
-        user_account.positions = [new_position]
+        user_account.positions = new_positions
         
         user_accounts.append(user_account)
         
@@ -191,9 +244,7 @@ def configure_account_category_output(user_account_summary):
         account_categories.append(account_category)
         
     return account_categories
-    
-    
-    
+      
 def calculate_user_networth(user_account_summary):
     networth = 0
     for act in user_account_summary:
@@ -217,22 +268,20 @@ def demo():
         else:
             ip_addr = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
             user = make_custom_demo_user(form_dict, ip_addr)
-            # Set the form's user id to a generic custom (for display purposes)
-            form_user_id = get_user_by_email('custom@demo.com').id
-            
     else:
-        form_dict = None
-        # on the demo page, default to young working professional
-        user = get_user_by_email('ywp@demo.com')
-        form_user_id = user.id
-        
+        try:
+            user = get_user_by_email(current_user.email)
+        except:
+            # on the demo page, default to young working professional
+            user = get_user_by_email('ywp@demo.com')
+            
      # Log in the demo user
     login_user(user, remember=False)
     
     # Get the account assets for display
     user_accounts = get_user_account_summary(current_user)
     
-    # app.logger.info('Demo user id: %s' %str(current_user.email))
+    # app.logger.info('Demo user: %s' %str(current_user.email))
     
     # Add up the net worth from the assets
     net_worth = calculate_user_networth(user_accounts)
@@ -242,6 +291,12 @@ def demo():
     
     demo_users =  get_demo_accounts()
     
+    # Check to see if it's a custom user
+    custom_user_id = get_default_custom_demo_user().id
+    form_user_id = user.id
+    if form_user_id not in [d_user.id for d_user in demo_users]:
+        form_user_id = custom_user_id
+        
     kwargs = {
         'account_categories': account_categories, 
         'demo_users': demo_users,

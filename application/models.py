@@ -4,11 +4,13 @@ from application import db
 
 # TODO: lazy load? optimize?
 
-def create_new_demo_asset(asset_name):
-    new_asset = Asset(asset_name, 'Demo')
+def create_new_demo_asset(asset_name, asset_class, is_demo = True):
+    # TODO: make more modular / general
+    new_asset = Asset(asset_name = asset_name, asset_class = asset_class, is_demo = is_demo)
     db.session.add(new_asset)
     db.session.commit()
     return new_asset
+    
 
 class AssetPosition(db.Model):
     __tablename__ = 'asset_positions'
@@ -35,13 +37,15 @@ class Asset(db.Model):
     id = db.Column(db.Integer, primary_key = True)
     asset_name = db.Column(db.String(32))
     asset_class = db.Column(db.String(32))
+    is_demo = db.Column(db.Boolean)
     
     def __repr__(self):
         return '<Asset %s / %s>' % (self.asset_name, self.asset_class)
         
-    def __init__(self, asset_name, asset_class):
+    def __init__(self, asset_name, asset_class, is_demo = False):
         self.asset_name = asset_name
         self.asset_class = asset_class
+        self.is_demo = is_demo
 
 
 class CustomDemoIP(db.Model):
@@ -51,7 +55,7 @@ class CustomDemoIP(db.Model):
     __tablename__ = 'custom_demo_ip'
     
     id = db.Column(db.Integer, primary_key=True)
-    ip_address = db.Column(db.String(32), index=True)
+    ip_address = db.Column(db.String(32))
     
     def __repr__(self):
         return '<CustomDemoIP %d -- %s>' % (self.id, self.ip_address)
@@ -69,7 +73,7 @@ class UserAccount(db.Model):
     account_id = db.Column(db.Integer, db.ForeignKey('account.id'))
     account = db.relationship('Account')    
     
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
     
     # One to many mapping that is bidirectional (user has many positions / positions mapped to one user)
     positions = db.relationship('AssetPosition', backref='account', lazy='dynamic')
@@ -87,15 +91,18 @@ class Account(db.Model):
     id = db.Column(db.Integer, primary_key = True)
     account_name = db.Column(db.String(255))
     
+    is_taxable = db.Column(db.Boolean)
+    
     account_category_id = db.Column(db.Integer, db.ForeignKey('account_category.id'))
     account_category = db.relationship('AccountCategory')
     
     def __repr__(self):
         return '<Account %s>' % (self.account_name)
         
-    def __init__(self, account_name, account_category):
+    def __init__(self, account_name, account_category, is_taxable = True):
         self.account_name = account_name
         self.account_category = account_category
+        self.is_taxable = is_taxable
         
         
 class AccountCategory(db.Model):

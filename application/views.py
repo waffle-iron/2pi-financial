@@ -6,10 +6,9 @@ from sqlalchemy import func
 
 from .forms import LoginForm, RegistrationForm
 
-from .models import User, CustomDemoIP, Asset, AssetPosition, AccountCategory, Account, UserAccount
+from .models import User, CustomDemoIP, Asset, AssetPosition, AccountCategory, Account, UserAccount, create_new_demo_asset
 
 import re
-from collections import defaultdict
 
 # TODO: comments
 # TODO: sort accounts
@@ -51,122 +50,6 @@ def chart_data():
     return jsonify(results = account_categories)
     
     
-def get_demo_sample_assets(user, form_dict = None):
-    """
-    TODO: query the database
-    """    
-    
-    account_cats = get_demo_account_categories()
-    default_assets = get_demo_account_default_assets()
-        
-    # Determine the assets for the given user id
-    if user.email == 'ywp@demo.com':
-        asset_values = {
-            'Banking': [('Savings', 60000)],
-            'Brokerage': [('Money Market (1%)', 20000), ('AAPL', 10000)],
-            '401(k)': [('SPY', 20000), ('EEM', 5000)],
-            'Real Assets': [('House', 200000), ('Mortgage', -150000)]
-        }
-        
-    elif user.email == 'nr@demo.com':
-        asset_values = {
-            'Banking': [('Savings', 600000)],
-            'Brokerage': [('Money Market (1%)', 200000), ('AAPL', 100000)],
-            '401(k)': [('SPY', 200000), ('EEM', 50000)],
-            'Real Assets': [('House', 2000000), ('Mortgage', -1500000)]
-        }
-        
-    elif user.email == 'fof@demo.com':
-        asset_values = {
-            'Banking': [('Savings', 500000)],
-            'Brokerage': [('Money Market (1%)', 200000), ('AAPL', 100000)],
-            '401(k)': [('SPY', 200000), ('EEM', 50000)],
-            'Real Assets': [('House', 2000000), ('Mortgage', -1500000)]
-        }
-        
-    elif user.email == 'custom@demo.com':
-    
-        if form_dict is None:
-            raise Exception("Missing form data") #TODO: change this
-            
-        # Load in the values for each of the assets in order
-        asset_keys = sorted([key for key in form_dict if re.match("input_\d_\d", key)])
-        # Convert the text in the boxes to integers
-        custom_assets_values = [int(form_dict.get(asset_key, 0)) for asset_key in asset_keys]
-        
-        # Set all assets to default assets so we know the names, etc.
-        asset_values = defaultdict(list)
-        for account_cat in account_cats:
-            default_assets_cat = default_assets.get(account_cat)
-            assets = []
-            for asset_name in default_assets_cat:
-                asset_values[account_cat].append( (asset_name, custom_assets_values.pop(0)) )
-                
-        # TODO: save these custom asset values down, so that we can examine our userbase
-        
-    else:
-         raise Exception("Unknown user email: %s" %user.email) #TODO: change this (handle users)
-       
-    account_categories = []
-    for acct_ndx in range(len(account_cats)):
-        account_cat = account_cats[acct_ndx]
-        assets = default_assets[account_cat]
-    
-        out_asset_list = [{
-                'label': assets[asset_ndx],
-                'id': 'input_%d_%d' %(acct_ndx, asset_ndx),
-                'amount':  asset_values[account_cat][asset_ndx][1]
-            } for asset_ndx in range(len(assets))]
-        
-        account_category = {
-            'heading': account_cat,
-            'heading_id': 'account_cat_head_%d' %acct_ndx,
-            'id': 'account_cat_%d' %acct_ndx,
-            'asset_sum': sum([a.get('amount') for a in out_asset_list]),
-            'assets': out_asset_list
-        }
-        account_categories.append(account_category)
-    
-    return account_categories
-    
-def make_custom_demo_account(form_dict, ip_addr):
-    
-    account_cats = get_demo_account_categories()
-    default_assets = get_demo_account_default_assets()
-
-    if form_dict is None:
-        raise Exception("Missing form data") #TODO: change this
-        
-    # Load in the values for each of the assets in order
-    account_keys = sorted([key for key in form_dict if re.match("input_\d_\d", key)])
-    # Convert the text in the boxes to integers
-    custom_accounts_values = [float(form_dict.get(account_key, 0)) for account_key in account_keys]
-    
-    # Set all assets to default assets so we know the names, etc.
-    account_values = defaultdict(list)
-    for account_cat in account_cats:
-        default_assets_cat = default_assets.get(account_cat)
-        assets = []
-        for asset_name in default_assets_cat:
-            account_values[account_cat].append( (asset_name, custom_accounts_values.pop(0)) )
-            
-    custom_demo_ip = CustomDemoIP(ip_addr)
-    db.session.add(custom_demo_ip)
-    db.session.commit()
-    
-    # app.logger.info('Custom user id: %s' %str(custom_demo_ip.get_id()))
-    
-    new_custom_id = custom_demo_ip.get_id()
-    # TODO: remove these hardcodes
-    new_custom_user = User('custom%s@customdemo.com' %str(new_custom_id), 
-                                                'demo123', 'Custom', is_demo=True, is_custom=True)
-    
-    db.session.add(new_custom_user)
-    db.session.commit()
-    
-    return new_custom_user.get_id()
-    
-    
     
 #
 # DATA ACCESS
@@ -197,7 +80,9 @@ def get_user_account_summary(user):
     # TODO: fix query
     out = db.session.query(
             UserAccount.id.label('id'),
+            Account.id.label('account_id'),
             Account.account_name.label('account_name'),
+            AccountCategory.id.label('account_category_id'),
             AccountCategory.account_category_name.label('account_category_name'),
             func.sum(AssetPosition.value).label('value')). \
         join(AssetPosition). \
@@ -209,35 +94,102 @@ def get_user_account_summary(user):
           
     return out
     
+def get_custom_demo_asset(custom_demo_asset_name = 'Demo'):
+    demo_asset = db.session.query(Asset).\
+        filter(Asset.asset_name == custom_demo_asset_name, Asset.asset_class == 'Demo').\
+        first()
+    if not demo_asset:
+        demo_asset = create_new_demo_asset(custom_demo_asset_name)
+    return(demo_asset)    
+    
+def make_custom_demo_user(form_dict, ip_addr):
+    
+    account_cats = get_demo_account_categories()
+    default_assets = get_demo_account_default_assets()
+
+    if form_dict is None:
+        raise Exception("Missing form data") #TODO: change this
+      
+    # Add a new custom user
+    custom_demo_ip = CustomDemoIP(ip_addr)
+    db.session.add(custom_demo_ip)
+    db.session.commit()
+      
+    # app.logger.info('Custom user id: %s' %str(custom_demo_ip.id))
+    
+    new_custom_id = custom_demo_ip.id
+    # TODO: remove these hardcodes
+    new_custom_user = User('custom%s@customdemo.com' %str(new_custom_id), 
+                                                'demo123', 'Custom', is_demo=True, is_custom=True)
+                                                
+    # Load up the positions for this new user
+    account_keys = [key for key in form_dict if re.match("input_\d_\d", key)]
+    
+    user_accounts = []
+    
+    # Iterate through the accounts, adding positions
+    for acct_key in account_keys:
+        split_str = acct_key.split('_')
+        account_cat_id = int(split_str[1])
+        account_id = int(split_str[2])
+    
+        user_account = UserAccount(Account.query.get(account_id))
+    
+        # Convert the text in the boxes to integers
+        acct_value = int(float(form_dict.get(acct_key, 0)))
+        
+        # Get the generic demo asset
+        demo_asset = get_custom_demo_asset()
+        
+        new_position = AssetPosition(demo_asset, acct_value)
+        db.session.add(new_position)
+        
+        user_account.positions = [new_position]
+        
+        user_accounts.append(user_account)
+        
+    new_custom_user.user_accounts = user_accounts   
+    
+    db.session.add(new_custom_user)
+    db.session.commit()
+        
+    return new_custom_user
     
 def configure_account_category_output(user_account_summary):
 
+    # TODO: order the accounts better
+
     # Get the unique categories
-    account_cats = list(set([a_summary.account_category_name for a_summary in user_account_summary]))
+    account_cats = list(set([a_summary.account_category_id for a_summary in user_account_summary]))
      
     account_categories = []
-    for acct_cat_ndx in range(len(account_cats)):
-        
-        account_cat = account_cats[acct_cat_ndx]
+    for acct_cat_id in account_cats:
     
-        accounts = [(a_summary.account_name, a_summary.value) for a_summary in user_account_summary
-                                if a_summary.account_category_name == account_cat]
-        
+        # Get the category name
+        acct_cat_name = None
+        for a_summary in user_account_summary:
+            if a_summary.account_category_id == acct_cat_id:
+                acct_cat_name = a_summary.account_category_name
+                break
+                                
+        sub_accounts = [(a_summary.account_id, a_summary.account_name, a_summary.value) for a_summary in user_account_summary
+                                if a_summary.account_category_id == acct_cat_id]
+                                
         out_account_list = [{
-                'label': accounts[acct_ndx][0],
-                'id': 'input_%d_%d' %(acct_cat_ndx, acct_ndx),
-                'value':  accounts[acct_ndx][1]
-            } for acct_ndx in range(len(accounts))]
-        
+                'label': acct[1],
+                'id': 'input_%d_%d' %(acct_cat_id, acct[0]),
+                'value':  int(acct[2])
+            } for acct in sub_accounts]
+            
         account_category = {
-            'heading': account_cat,
-            'heading_id': 'account_cat_head_%d' %acct_cat_ndx,
-            'id': 'account_cat_%d' %acct_cat_ndx,
-            'account_sum': sum([a.get('value') for a in out_account_list]),
+            'heading': acct_cat_name,
+            'heading_id': 'account_cat_head_%d' %acct_cat_id,
+            'id': 'account_cat_%d' %acct_cat_id,
+            'account_sum': int(sum([a.get('value') for a in out_account_list])),
             'accounts': out_account_list
         }
         account_categories.append(account_category)
-    
+        
     return account_categories
     
     
@@ -247,7 +199,7 @@ def calculate_user_networth(user_account_summary):
     for act in user_account_summary:
         networth += act.value
         
-    return networth
+    return int(networth)
     
     
 @app.route('/demo', methods = ['GET', 'POST'])
@@ -260,22 +212,24 @@ def demo():
     
         # app.logger.info('Select field changed: %s' % request.form['select-changed'])
         if form_dict.get('select-changed') == 'yes':
-            user_id = form_dict.get('select-cohort')
+            form_user_id = form_dict.get('select-cohort')
+            user = get_user_by_id(form_user_id)
         else:
             ip_addr = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
-            user_id = make_custom_demo_account(form_dict, ip_addr)
+            user = make_custom_demo_user(form_dict, ip_addr)
+            # Set the form's user id to a generic custom (for display purposes)
+            form_user_id = get_user_by_email('custom@demo.com').id
             
     else:
         form_dict = None
         # on the demo page, default to young working professional
-        user_id = get_user_by_email('ywp@demo.com').get_id()
+        user = get_user_by_email('ywp@demo.com')
+        form_user_id = user.id
         
      # Log in the demo user
-    user = get_user_by_id(user_id)
     login_user(user, remember=False)
     
-    # Get the account assets for plotting
-    # account_categories = get_demo_sample_assets(current_user, form_dict)
+    # Get the account assets for display
     user_accounts = get_user_account_summary(current_user)
     
     # app.logger.info('Demo user id: %s' %str(current_user.email))
@@ -291,7 +245,7 @@ def demo():
     kwargs = {
         'account_categories': account_categories, 
         'demo_users': demo_users,
-        'user_id': int(user_id),
+        'user_id': int(form_user_id), # This is simply used for display purposes
         'net_worth': net_worth
     }
     

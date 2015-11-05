@@ -56,7 +56,7 @@ login_manager.login_view = 'login'
 
 from application import views, models
 
-from models import User, Asset, AssetPosition, AccountCategory, Account, UserAccount
+from models import User, Asset, AssetPosition, AccountCategory, Account, UserAccount, create_new_demo_asset
 
 @app.before_first_request
 def setup():
@@ -170,13 +170,6 @@ def setup():
         db.session.add(user)
         db.session.commit()
         
-    
-    
-def create_new_demo_asset(asset_name):
-    new_asset = Asset(asset_name, 'Demo')
-    db.session.add(new_asset)
-    db.session.commit()
-    return new_asset
     
     
     

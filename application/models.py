@@ -4,6 +4,12 @@ from application import db
 
 # TODO: lazy load? optimize?
 
+def create_new_demo_asset(asset_name):
+    new_asset = Asset(asset_name, 'Demo')
+    db.session.add(new_asset)
+    db.session.commit()
+    return new_asset
+
 class AssetPosition(db.Model):
     __tablename__ = 'asset_positions'
     
@@ -47,12 +53,6 @@ class CustomDemoIP(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ip_address = db.Column(db.String(32), index=True)
     
-    def get_id(self):
-        try:
-            return unicode(self.id) 
-        except NameError:
-            return str(self.id) 
-            
     def __repr__(self):
         return '<CustomDemoIP %d -- %s>' % (self.id, self.ip_address)
         
@@ -74,6 +74,9 @@ class UserAccount(db.Model):
     # One to many mapping that is bidirectional (user has many positions / positions mapped to one user)
     positions = db.relationship('AssetPosition', backref='account', lazy='dynamic')
     
+    def __repr__(self):
+        return '<UserAccount %d -- %s>' % (self.user_id, self.account_id)
+        
     def __init__(self, account):
         self.account = account
     
@@ -87,6 +90,9 @@ class Account(db.Model):
     account_category_id = db.Column(db.Integer, db.ForeignKey('account_category.id'))
     account_category = db.relationship('AccountCategory')
     
+    def __repr__(self):
+        return '<Account %s>' % (self.account_name)
+        
     def __init__(self, account_name, account_category):
         self.account_name = account_name
         self.account_category = account_category
@@ -98,6 +104,9 @@ class AccountCategory(db.Model):
     id = db.Column(db.Integer, primary_key = True)
     account_category_name = db.Column(db.String(255), unique=True)
     
+    def __repr__(self):
+        return '<AccountCategory %s>' % (self.account_category_name)
+        
     def __init__(self, account_category_name):
         self.account_category_name = account_category_name
         
@@ -115,13 +124,7 @@ class User(UserMixin, db.Model):
     # One to many mapping that is bidirectional (user has many positions / positions mapped to one user)
     user_accounts = db.relationship('UserAccount', backref='user', lazy='dynamic') 
     
-    def get_id(self):
-        """Return the id to satisfy Flask-Login's requirements."""
-        try:
-            return unicode(self.id)  # python 2
-        except NameError:
-            return str(self.id)  # python 3
-        
+    
     @property
     def is_active(self):
         """True, as all users are active."""

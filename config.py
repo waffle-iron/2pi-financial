@@ -22,7 +22,7 @@ SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'db_repository')
 
 
 # AZURE GIT
-# pwmiller:VZfj0!vyh2hm
+# pwmiller : VZfj0!vyh2hm
 
 # AZURE FTP
-# userName="pwmiller1\$pwmiller1" userPWD="fCnuNayH0rtipi3qHAN1eHXbbLk8dYabpf6A5NB9KCXLQo9XiKWyNLttEzQG"
+# pwmiller1\$pwmiller1 : fCnuNayH0rtipi3qHAN1eHXbbLk8dYabpf6A5NB9KCXLQo9XiKWyNLttEzQG

@@ -4,9 +4,9 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 WTF_CSRF_ENABLED = True
 SECRET_KEY = 'abc123'
 
-ENV = 'prod'
+ENV = 'developement'
 
-if ENV == 'devlopement':
+if ENV == 'developement':
     SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost:1111/development'
 else:
     SQLALCHEMY_DATABASE_URI = 'postgres://mmcogvvfdbnpor:rmXMarJXrh6Sh3mKkRO7SQpCnY@ec2-54-197-245-93.compute-1.amazonaws.com:5432/damnjigp8qp428'

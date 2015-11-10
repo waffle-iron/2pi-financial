@@ -36,6 +36,7 @@ assets.register('css',
 
 assets.register('js', Bundle(
     'js/vendor/jquery/jquery.js',
+    'js/vendor/d3/d3.min.js',
     'js/vendor/*.js',
     'js/*.js',
     output='js/app.%(version)s.js'))

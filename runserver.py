@@ -1,13 +1,6 @@
 from os import environ
 
-from flask import Flask
-app = Flask(__name__)
-# from application import app
-
-@app.route('/')
-@app.route('/home')
-def home():
-    return 'This is an app'
+from application import app
 
 if __name__ == '__main__':
     HOST = environ.get('SERVER_HOST', 'localhost')

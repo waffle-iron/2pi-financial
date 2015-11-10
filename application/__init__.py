@@ -31,12 +31,13 @@ assets.register('css',
     Bundle(
       'css/vendor/*.css',
       'css/*.css',
-        # Bundle( 'css/*.scss', filters='pyscss', output='stylesheets/app.%(version)s.css'),
-      output='stylesheets/all.%(version)s.css'))
+        # Bundle( 'css/*.scss', filters='pyscss', output='css/app.%(version)s.css'),
+      output='css/app.%(version)s.css'))
 
 assets.register('js', Bundle(
     'js/vendor/jquery/jquery.js',
     'js/vendor/d3/d3.min.js',
+    'js/vendor/nvd3/nv.d3.min.js',
     'js/vendor/*.js',
     'js/*.js',
     output='js/app.%(version)s.js'))

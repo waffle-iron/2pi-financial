@@ -2,9 +2,9 @@ import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 WTF_CSRF_ENABLED = True
-SECRET_KEY = 'abc123'
+SECRET_KEY = 'djIVW3S5CXt1YouGdGF5L$iB2'
 
-ENV = 'prod'
+ENV = os.getenv('FLASKENV', 'prod')
 
 if ENV == 'developement':
     SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost:1111/development'
@@ -20,3 +20,5 @@ SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'db_repository')
 # heroku create
 # git push heroku master
 # Add database resource
+
+# heroku config:set FLASKENV=prod

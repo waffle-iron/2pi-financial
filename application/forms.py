@@ -6,6 +6,7 @@ from wtforms.validators import DataRequired, Email, ValidationError
 from .models import User
 
 # TODO: CSRF
+# TODO: implement fully
 
 class LoginForm(Form):
     email = StringField('email', validators=[DataRequired(), Email()])

@@ -7,8 +7,10 @@ import os
 
 import logging
 
+# Configure our app and databse from the file
 app = Flask(__name__)
 app.config.from_object('config')
+app.secret_key = app.config['SECRET_KEY']
 
 # Set up logging
 file_handler = logging.FileHandler('app.log')
@@ -34,6 +36,7 @@ assets.register('css',
         # Bundle( 'css/*.scss', filters='pyscss', output='css/app.%(version)s.css'),
       output='css/app.%(version)s.css'))
 
+# Bundle these in a specific order for dependency reasons
 assets.register('js', Bundle(
     'js/vendor/jquery/jquery.js',
     'js/vendor/d3/d3.min.js',
@@ -42,7 +45,7 @@ assets.register('js', Bundle(
     'js/*.js',
     output='js/app.%(version)s.js'))
     
-# TODO: load some javascript assets at the end of the body
+# TODO: load some javascript assets at the end of the body, for speed purposes
 
 # Load up the database
 db = SQLAlchemy(app)
@@ -58,6 +61,7 @@ login_manager.login_view = 'login'
 
 from application import views, models
 
+# Initialization of the application
 from models import User, Asset, AssetPosition, AccountCategory, Account, UserAccount, create_new_demo_asset
 
 @app.before_first_request

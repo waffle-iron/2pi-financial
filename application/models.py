@@ -2,6 +2,7 @@ from flask.ext.login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from application import db
 
+# TODO: comments
 # TODO: lazy load? optimize?
 
 def create_new_demo_asset(asset_name, asset_class, is_demo = True):
@@ -63,8 +64,7 @@ class CustomDemoIP(db.Model):
     def __init__(self, ip_addr):
         self.ip_address = ip_addr
         
-        
-        
+                
 class UserAccount(db.Model):
     __tablename__ = 'user_account'
     

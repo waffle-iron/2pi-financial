@@ -45,10 +45,10 @@ assets.register('js', Bundle(
     'js/*.js',
     output='js/app.%(version)s.js'))
     
-# TODO: load some javascript assets at the end of the body, for speed purposes
-
 # Load up the database
 db = SQLAlchemy(app)
+
+app.logger.info('SQL Alchemy loaded')
 
 # For the navigation bar
 nav = Navigation(app)

@@ -27,3 +27,14 @@ SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'db_repository')
 # Server host, port?
 # configure the database
 # add database resource to the application
+
+
+# Set up for development:
+# git clone 
+# virtualenv venv
+# source venv/bin/Activate
+# export FLASKENV=development
+# create Postgres database development/1111
+# python runserver.py
+
+# git push origin master

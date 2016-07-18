@@ -3,8 +3,8 @@
 ## Launching in development
 
 python runserver.py
-(make sure database is setup and environment is development)
-(check the config.py file)
+(make sure database is setup and environment variable is development)
+(double check the config.py file)
 
 ## Contents
 
@@ -14,17 +14,17 @@ python runserver.py
  - config: basic configuration for the dev and prod environments
  - runserver: file that launches the instance of the application
  
- ### Application
- 
-  - init.py: configuration, logging, set up web assets, load the database; run when the application is launched
-  - views.py: different pages on the website; demo accounts; data access functions (needs to be broken up)
-  - models.py: database models definitions and functionality
-  - forms.py: login form, can be reworked
+### Application
+
+- init.py: configuration, logging, set up web assets, load the database; run when the application is launched
+- views.py: different pages on the website; demo accounts; data access functions (needs to be broken up)
+- models.py: database models definitions and functionality
+- forms.py: login form, can be reworked
   
-  ### Static
-  
-  CSS, Images, Javascript
-  
-  ### Templates
-  
-  HTML templates
+### Static
+
+CSS, Images, Javascript
+
+### Templates
+
+HTML templates

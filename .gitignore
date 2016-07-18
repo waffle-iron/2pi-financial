@@ -4,6 +4,7 @@ reference/
 *~
 *.pyc
 .sass-cache
+*.log
 application/static/.webassets-cache/
 application/static/css/app.*
 application/static/js/app.*

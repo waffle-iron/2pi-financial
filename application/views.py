@@ -449,3 +449,27 @@ def logout():
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
+    
+    
+#
+# Data pipeline
+#
+
+@app.route('/recommendations')
+def recommendations():
+    """
+    An example for passing data from the server to the frontend template
+    """
+    
+    suggestions = [
+        {'account': 'broker A', 'asset': 'SPY', 'asset_position': 2000, 'suggestion': 'buy $2000'},
+        {'account': 'broker B', 'asset': 'EEM', 'asset_position': 1000, 'suggestion': 'sell $1000'},
+        {'account': 'bank A', 'asset': 'checking', 'asset_position': 10000, 'suggestion': 'transfer $1000 to broker A'}
+    ]
+    
+    kwargs = {
+        'suggestions': suggestions
+    }
+    
+    return render_template('recommendations.html', **kwargs)
+    

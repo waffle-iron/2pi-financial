@@ -14,27 +14,46 @@ else:
 
 SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'db_repository')
 
+
+#####
 # HEROKU
+#####
 # miller1417@gmail.com : OiV4T3Zw$A&8
 
 # heroku login
 # # heroku create
 # git push heroku master
 
-
+#####
 # Set up on the server:
+#####
 # heroku config:set FLASKENV=prod
 # Server host, port?
 # configure the database
 # add database resource to the application
 
-
+#####
 # Set up for development:
-# git clone 
+#####
+# git clone https://miller1417@bitbucket.org/miller1417/dashboard_app.git
 # virtualenv venv
 # source venv/bin/Activate
+# pip install -r requirements.txt
 # export FLASKENV=development
-# create Postgres database development/1111
+# create Postgres database
 # python runserver.py
 
+# Creating the Postgres database:
+# sudo apt-get install postgres-9.3
+# sudo apt-get install pgadmin3
+# su - postgres
+# psql
+# CREATE DATABASE development;
+# \l
+# exit
+# sudo gedit /etc/postgresql/9.3/main/postgresql.conf
+### change the port to 1111
+
+######
 # git push origin master
+######

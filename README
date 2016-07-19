@@ -3,7 +3,7 @@
 ## Launching in development
 
 python runserver.py
-(make sure database is setup and environment variable is development)
+(make sure database is setup to the correct port and environment variable is development)
 (double check the config.py file)
 
 ## Contents

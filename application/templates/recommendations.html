@@ -1,0 +1,16 @@
+<div>
+    <h1>
+    Recommended actions for you:
+    </h1>
+
+    <ul>
+        {% for suggestion in suggestions %}
+        
+            <li>
+                {{ suggestion.asset }}
+            </li>
+        
+        {% endfor %}
+    </ul>
+    
+</div>

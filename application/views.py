@@ -1,4 +1,4 @@
-from flask import render_template, request, url_for, redirect, current_app, jsonify, flash, session, g
+from flask import render_template, request, url_for, redirect, current_app, jsonify, flash, session, g, abort
 from flask.ext.login import login_user, logout_user, current_user, login_required
 from application import app, nav, db, login_manager
 
@@ -458,18 +458,65 @@ def page_not_found(e):
 @app.route('/recommendations')
 def recommendations():
     """
-    An example for passing data from the server to the frontend template
+    Template for the recommendations tab
     """
-    
+
     suggestions = [
         {'account': 'broker A', 'asset': 'SPY', 'asset_position': 2000, 'suggestion': 'buy $2000'},
         {'account': 'broker B', 'asset': 'EEM', 'asset_position': 1000, 'suggestion': 'sell $1000'},
         {'account': 'bank A', 'asset': 'checking', 'asset_position': 10000, 'suggestion': 'transfer $1000 to broker A'}
     ]
-    
+
     kwargs = {
         'suggestions': suggestions
     }
-    
+
     return render_template('recommendations.html', **kwargs)
-    
+
+
+@app.route('/risk_test', methods = ['GET', 'POST'])
+def risk_test():
+    """
+    Template for the risk test questions tab
+    """
+
+    if request.method == 'POST':
+        # Load in the data in the POST request's form
+        form_dict = request.form
+
+        # TODO: get the levels selected on the page
+        level_answers = form_dict.get('question_answers')
+
+        print level_answers
+
+        # user_annuity_levels = {}
+        # for level_answer in level_answers:
+
+        # Get the user ID
+        # Get the user's IP address for logging and create a new demo account
+        # ip_addr = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
+        # user = make_custom_demo_user(form_dict, ip_addr)
+
+        return redirect(url_for('recommendations'))
+
+    elif request.method == 'GET':
+        # TODO: move these to some config file
+        possible_annuity_levels = range(60000, 160000, 20000)
+
+        question_prompts = [
+            "I'd be very unhappy if I had",
+            "I'd be unhappy if I had"
+            "I'd be content if I had",
+            "I'd be satisfied if I had",
+            "I'd be very happy if I had"
+        ]
+
+        kwargs = {
+            'possible_annuity_levels': possible_annuity_levels,
+            'question_prompts': question_prompts
+        }
+
+        return render_template('risk_test.html', **kwargs)
+
+    else:
+        abort(404)

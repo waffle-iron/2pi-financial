@@ -44,7 +44,7 @@ sudo gedit /etc/postgresql/9.3/main/postgresql.conf
 
 never do: git push origin master
 do:
-git branch -b <my-feature>
+git checkout -b <my-feature>
 Make changes
 git add and git commit
 git push -u origin <my-feature>

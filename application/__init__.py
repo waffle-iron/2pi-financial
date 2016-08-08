@@ -1,3 +1,5 @@
+#TODO: put these inits and other hardcoded text in separate config files (JSON?)
+
 from flask import Flask, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask.ext.assets import Environment, Bundle

@@ -9,8 +9,10 @@ ENV = os.getenv('FLASKENV', 'prod')
 
 if ENV == 'development':
     SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost:1111/development'
-else:
+elif ENV == 'development':
     SQLALCHEMY_DATABASE_URI = 'postgres://mmcogvvfdbnpor:rmXMarJXrh6Sh3mKkRO7SQpCnY@ec2-54-197-245-93.compute-1.amazonaws.com:5432/damnjigp8qp428'
-
+else:
+    raise Exception('No SQL database URI specified')
+    
 SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'db_repository')
 

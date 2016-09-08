@@ -1,4 +1,4 @@
-# Finance App (to be named)
+t# Finance App (to be named)
 
 ## Launching in development
 
@@ -13,14 +13,14 @@ python runserver.py
  - db_create, db_downgrade, db_migrate, db_upgrade currently not in use
  - config: basic configuration for the dev and prod environments
  - runserver: file that launches the instance of the application
- 
+
 ### Application
 
 - init.py: configuration, logging, set up web assets, load the database; run when the application is launched
 - views.py: different pages on the website; demo accounts; data access functions (needs to be broken up)
 - models.py: database models definitions and functionality
 - forms.py: login form, can be reworked
-  
+
 ### Static
 
 CSS, Images, Javascript

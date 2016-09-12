@@ -19,6 +19,8 @@ file_handler = logging.FileHandler('app.log')
 app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 
+app.logger.info('Enviornment: %s' %app.config['ENV'])
+
 # Function to easily find your assets
 # In your template use <link rel=stylesheet href="{{ static('filename') }}">
 app.jinja_env.globals['static'] = (

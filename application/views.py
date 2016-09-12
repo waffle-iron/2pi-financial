@@ -488,15 +488,29 @@ def risk_test():
     Template for the risk test questions tab
     """
 
+    # TODO: move these to some config file
+    possible_annuity_levels = range(60000, 160000, 20000)
+
+    question_prompts = [
+        "I'd be very unhappy if I had",
+        "I'd be unhappy if I had",
+        "I'd be content if I had",
+        "I'd be satisfied if I had",
+        "I'd be very happy if I had"
+    ]
+    
+    num_questions = len(question_prompts)
+    
     if request.method == 'POST':
         # Load in the data in the POST request's form
         form_dict = request.form
+        
+        level_answers = []
+        for question_id in range(num_questions):
+            level_answers.append(form_dict.get('risk-question-%d' %question_id))
 
-        # TODO: get the levels selected on the page
-        level_answers = form_dict.get('question_answers')
-
-        print level_answers
-
+        return str(level_answers)
+        
         # user_annuity_levels = {}
         # for level_answer in level_answers:
 
@@ -505,19 +519,9 @@ def risk_test():
         # ip_addr = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
         # user = make_custom_demo_user(form_dict, ip_addr)
 
-        return redirect(url_for('recommendations'))
+        # return redirect(url_for('recommendations'))
 
     elif request.method == 'GET':
-        # TODO: move these to some config file
-        possible_annuity_levels = range(60000, 160000, 20000)
-
-        question_prompts = [
-            "I'd be very unhappy if I had",
-            "I'd be unhappy if I had"
-            "I'd be content if I had",
-            "I'd be satisfied if I had",
-            "I'd be very happy if I had"
-        ]
 
         kwargs = {
             'possible_annuity_levels': possible_annuity_levels,

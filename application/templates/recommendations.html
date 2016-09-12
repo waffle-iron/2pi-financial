@@ -1,4 +1,7 @@
+{% extends "base.html" %}
+{% block body %}
 
+>>>>>>> remotes/origin/pipeline_test
 <div>
     <h1>
     Recommended actions for you:
@@ -6,12 +9,14 @@
 
     <ul>
         {% for suggestion in suggestions %}
-        
+
             <li>
                 {{ suggestion.asset }}
             </li>
-        
+
         {% endfor %}
     </ul>
-    
+
 </div>
+
+{% endblock %}

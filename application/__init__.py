@@ -9,7 +9,7 @@ import os
 
 import logging
 
-# Configure our app and databse from the file
+# Configure our app and database from the file
 app = Flask(__name__)
 app.config.from_object('config')
 app.secret_key = app.config['SECRET_KEY']
@@ -57,13 +57,11 @@ app.logger.info('SQL Alchemy loaded')
 # For the navigation bar
 nav = Navigation(app)
 
-# Login manager
-login_manager = LoginManager()
+from application import views, models, auth
+
+# Initialize the login manager
+from auth import login_manager
 login_manager.init_app(app)
-login_manager.login_view = 'login'
-
-
-from application import views, models
 
 # Initialization of the application
 from models import User, Asset, AssetPosition, AccountCategory, Account, UserAccount, create_new_demo_asset

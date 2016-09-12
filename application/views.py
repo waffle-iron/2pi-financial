@@ -1,6 +1,6 @@
 from flask import render_template, request, url_for, redirect, current_app, jsonify, flash, session, g, abort
 from flask.ext.login import login_user, logout_user, current_user, login_required
-from application import app, nav, db, login_manager
+from application import app, nav, db
 
 from sqlalchemy import func
 
@@ -284,14 +284,6 @@ def calculate_user_networth(user_account_summary):
 # VIEWS
 #
 
-@login_manager.user_loader
-def load_user(user_id):
-    """
-    Method required by Flask-Login
-    """
-    return User.query.get(user_id)
-
-
 @app.before_request
 def before_request():
     """
@@ -394,20 +386,23 @@ def register():
     """
     Default registration view
     """
-    # If a user is already logged in
-    if g.user is not None and g.user.is_authenticated:
-        return redirect(url_for('home'))
-
-    # Load in the WTF form
+    # If a user is already logged in    
+    # if g.user is not None and g.user.is_authenticated:
+        # return redirect(url_for('home'))
+    
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User()
-        form.populate_obj(user)
+        user = User(form.email.data, form.password.data)
+                
         db.session.add(user)
         db.session.commit()
-        return redirect(url_for('login'))
+        
+        login_user(user)
+        
+        return redirect(url_for('home'))
+        
     return render_template('register.html', form=form)
-
+    
 
 @app.route('/login',methods=['GET','POST'])
 def login():
@@ -427,7 +422,13 @@ def login():
 
         flash('Login successful for email="%s"' % form.email.data)
 
-        return redirect(request.args.get('next') or url_for('home'))
+        next = request.args.get('next')
+        # next_is_valid should check if the user has valid
+        # permission to access the `next` url
+        # if not next_is_valid(next):
+            # return flask.abort(400)
+        
+        return redirect(next or url_for('home'))
 
     return render_template('login.html',  form=form)
 

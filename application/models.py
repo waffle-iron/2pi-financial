@@ -131,6 +131,13 @@ class User(UserMixin, db.Model):
     # One to many mapping that is bidirectional (user has many positions / positions mapped to one user)
     user_accounts = db.relationship('UserAccount', backref='user', lazy='dynamic') 
     
+    def __init__(self, email, password, user_name = None, is_demo = False, is_custom = False):
+        self.email = email
+        self.user_name = user_name
+        self.is_demo = is_demo
+        self.is_custom = is_custom
+        
+        self.pw_hash = set_password(password)        
     
     @property
     def is_active(self):

@@ -392,10 +392,11 @@ def register():
     
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User(form.email.data, form.password.data)
-                
-        db.session.add(user)
-        db.session.commit()
+    
+        dat = {'email': form.email.data,
+                   'password': form.password.data}
+    
+        user = User.create(**dat)
         
         login_user(user)
         
@@ -404,7 +405,7 @@ def register():
     return render_template('register.html', form=form)
     
 
-@app.route('/login',methods=['GET','POST'])
+@app.route('/login',methods=['GET', 'POST'])
 def login():
     """
     Default login view

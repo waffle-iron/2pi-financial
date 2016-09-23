@@ -6,7 +6,7 @@ from sqlalchemy import func
 
 from .forms import LoginForm, RegistrationForm
 
-from .models import User, CustomDemoIP, Asset, AssetPosition, AccountCategory, Account, UserAccount, create_new_demo_asset
+from .models import User, CustomDemoIP, Asset, AssetPosition, AccountCategory, Account, UserAccount
 
 import re
 
@@ -45,7 +45,7 @@ def query_result_to_dict(q_result):
 # USER ACCESS
 
 def get_user_by_id(user_id):
-    return User.query.get(user_id)
+    return User.get(user_id)
 
 
 def get_user_by_email(email):
@@ -404,7 +404,6 @@ def register():
         
     return render_template('register.html', form=form)
     
-
 @app.route('/login',methods=['GET', 'POST'])
 def login():
     """
@@ -433,7 +432,18 @@ def login():
 
     return render_template('login.html',  form=form)
 
+@app.route('/profile')
+@login_required
+def profile(id):
+    user = get_user_by_id(id)
+    
+    if user == None:
+        flash('User %s not found.' % nickname)
+        return redirect(url_for('login'))
 
+    
+    
+    
 @app.route('/logout')
 @login_required
 def logout():

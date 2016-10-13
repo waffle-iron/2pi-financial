@@ -58,6 +58,13 @@ app.logger.info('SQL Alchemy loaded')
 # For the navigation bar
 nav = Navigation(app)
 
+# Get the form field choices
+form_field_names = ['gender', 'education', 'financial_advisor', 'occupation', 'experience']
+form_field_choices = {}
+for field in form_field_names:
+    with open('json/%s.json' %field, 'rb') as fp:
+        form_field_choices[field] = json.load(fp)
+        
 from application import views, models, auth
 
 # Initialize the login manager
@@ -66,6 +73,7 @@ login_manager.init_app(app)
 
 # Initialization of the application
 from models import User, Asset, AssetPosition, AccountCategory, Account, UserAccount
+
 
 @app.before_first_request
 def setup():

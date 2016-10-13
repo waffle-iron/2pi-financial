@@ -4,7 +4,7 @@ from application import app, nav, db
 
 from sqlalchemy import func
 
-from .forms import LoginForm, RegistrationForm
+from .forms import LoginForm, RegistrationForm, ProfileForm
 
 from .models import User, CustomDemoIP, Asset, AssetPosition, AccountCategory, Account, UserAccount
 
@@ -20,10 +20,12 @@ import re
 nav.Bar('loggedin', [
     nav.Item('Home', 'home'),
     nav.Item('Demo', 'demo'),
+    nav.Item('Profile', 'profile'),
     nav.Item('Logout', 'logout')
 ])
 
 nav.Bar('loggedout', [
+    nav.Item('Home', 'home'),
     nav.Item('Demo', 'demo'),
     nav.Item('Login', 'login'),
     nav.Item('Register', 'register')
@@ -400,10 +402,28 @@ def register():
         
         login_user(user)
         
-        return redirect(url_for('home'))
+        return redirect(url_for('profile'))
         
     return render_template('register.html', form=form)
     
+    
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    """
+    Default registration view
+    """
+    form = ProfileForm(obj = current_user)
+        
+    if form.validate_on_submit():
+        form.populate_obj(current_user)
+        current_user.save()
+        
+        return redirect(url_for('profile'))
+        
+    return render_template('profile.html', form=form)
+    
+  
 @app.route('/login',methods=['GET', 'POST'])
 def login():
     """
@@ -430,18 +450,7 @@ def login():
         
         return redirect(next or url_for('home'))
 
-    return render_template('login.html',  form=form)
-
-@app.route('/profile')
-@login_required
-def profile(id):
-    user = get_user_by_id(id)
-    
-    if user == None:
-        flash('User %s not found.' % nickname)
-        return redirect(url_for('login'))
-
-    
+    return render_template('login.html',  form=form) 
     
     
 @app.route('/logout')

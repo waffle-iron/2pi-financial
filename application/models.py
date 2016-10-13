@@ -127,9 +127,16 @@ class User(UserMixin, CRUDMixin, db.Model):
     email = db.Column(db.String(255), index=True, unique=True)
     pw_hash = db.Column(db.String(255))
     user_name = db.Column(db.String(255))
+    
+    birthdate =db.Column(db.Date)
+    salary = db.Column(db.Integer)    
+    
     gender_id = db.Column(db.Integer)
-    profession_id = db.Column(db.Integer)
+    occupation_id = db.Column(db.Integer)
+    experience_id = db.Column(db.Integer)
     education_id = db.Column(db.Integer)
+    financial_advisor_id = db.Column(db.Integer)
+    
     is_demo = db.Column(db.Boolean, default=False)
     is_custom = db.Column(db.Boolean, default=False)
     

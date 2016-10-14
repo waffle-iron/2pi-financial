@@ -1,19 +1,11 @@
 <div class="col-xs-4">
 
     <form class="form" id="demo_sidebar" method="post">
-        <div style="display:none">
-          <input type="text" id="select-changed" name="select-changed" />
+
+        <div class="user-name">
+          {{ user_name }}
         </div>
-        <select class="form-control" data-width="auto" id="select-cohort" name="select-cohort" onchange="select_cohort_changed()">
         
-          {% for demo_user in demo_users %}
-           <option value="{{ demo_user.id }}" {% if user_id == demo_user.id %} selected = "selected" {% endif %}> 
-            {{ demo_user.user_name }} 
-          </option>
-          {% endfor %}
-          
-        </select>
-    
         {% for account_cat in account_categories %}
         <div class="panel-group" role="tablist">
           <div class="panel panel-default">

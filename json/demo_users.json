@@ -15,11 +15,5 @@
       "password": "demo123",
       "user_name": "Nearing retirement",
       "is_demo": true
-    },
-    
-    {"email": "custom@demo.com",
-      "password": "demo123",
-      "user_name": "Custom",
-      "is_demo": true
     }
 ]

@@ -6,7 +6,9 @@ from sqlalchemy import func
 
 from .forms import LoginForm, RegistrationForm, ProfileForm
 
-from .models import User, CustomDemoIP, Asset, AssetPosition, AccountCategory, Account, UserAccount
+from .models import User, CustomDemoIP, Asset, AssetPosition, AccountCategory, \
+    Account, UserAccount
+from application import unpack_choices, form_field_choices
 
 import re
 
@@ -26,7 +28,6 @@ nav.Bar('loggedin', [
 
 nav.Bar('loggedout', [
     nav.Item('Home', 'home'),
-    nav.Item('Demo', 'demo'),
     nav.Item('Login', 'login'),
     nav.Item('Register', 'register')
 ])
@@ -53,108 +54,18 @@ def get_user_by_id(user_id):
 def get_user_by_email(email):
     return User.query.filter(User.email == email).first()
 
-
-def get_default_custom_demo_user():
-    return get_user_by_email('custom@demo.com')
-
-
-# DEMO ACCOUNTS
-
-def make_custom_demo_user(form_dict, ip_addr):
-    """
-    Given input from the demo side bar form, create a custom new demo account
-    with the specified assets, etc.
-    """
-    if form_dict is None:
-        raise Exception("Missing form data") #TODO: change this
-
-    # Get the information that will need to be filled in
-    account_cats = get_demo_account_categories()
-    default_assets = get_demo_account_default_assets()
-
-    # Add a new custom user
-    custom_demo_ip = CustomDemoIP(ip_addr)
-    db.session.add(custom_demo_ip)
-    db.session.commit()
-
-    app.logger.info('Custom user ID added: %s' %str(custom_demo_ip.id))
-
-    # Get the default positions for a custom user
-    default_custom_user = get_default_custom_demo_user()
-
-    default_custom_user_positions = get_user_positions(default_custom_user)
-
-    new_custom_id = custom_demo_ip.id
-    # TODO: remove these hardcodes
-    new_custom_user = User('custom%s@customdemo.com' %str(new_custom_id),
-                                                'demo123', 'Custom', is_demo=True, is_custom=True)
-
-    # Load up the positions for this new user
-    account_keys = [key for key in form_dict if re.match("input_\d_\d", key)]
-
-    user_accounts = []
-
-    # Iterate through the accounts, adding positions
-    for acct_key in account_keys:
-        split_str = acct_key.split('_')
-        account_cat_id = int(split_str[1])
-        account_id = int(split_str[2])
-
-        user_account = UserAccount(Account.query.get(account_id))
-
-        # Convert the text in the boxes to integers
-        acct_value = int(float(form_dict.get(acct_key, 0)))
-
-        # Add in the positions according to the default custom user
-        new_positions = []
-        for def_pos in default_custom_user_positions:
-            if def_pos.account_id == account_id:
-                new_position = AssetPosition(def_pos.Asset, acct_value)
-                new_positions.append(new_position)
-
-        if len(new_positions) > 1:
-            raise Exception("There were more than 1 asset assigned to an account for a custom demo user.")
-
-        user_account.positions = new_positions
-
-        user_accounts.append(user_account)
-
-    new_custom_user.user_accounts = user_accounts
-
-    db.session.add(new_custom_user)
-    db.session.commit()
-
-    return new_custom_user
-
-
-def get_demo_account_categories():
-    """
-    Return the account categories for the side bar
-    """
-    return ['Banking', 'Brokerage', '401(k)', 'Real Assets']
-
-
-def get_demo_account_default_assets():
-    """
-    Return the assets that are associated with each demo account
-    """
-    default_assets = {
-        'Banking': ['Savings'],
-        'Brokerage': ['Money Market (1%)', 'AAPL'],
-        '401(k)': ['SPY', 'EEM'],
-        'Real Assets': ['House', 'Mortgage']
-    }
-    return default_assets
-
-
-def get_demo_accounts(include_custom = False):
+ 
+def get_user_accounts(user):
+    return UserAccount.query.filter(UserAccount.user_id == user.id).all()
+    
+    
+def get_demo_users():
     """
     Get all of the demo accounts (filtering out custom demo accounts if wanted)
     """
-    return User.query.filter(User.is_demo == True,
-                                            User.is_custom == include_custom).all()
-
-
+    return User.query.filter(User.is_demo == True).all()
+    
+    
 # USER POSITIONS
 
 def get_user_asset_class_summary(user):
@@ -314,6 +225,7 @@ def chart_data():
 
 
 @app.route('/demo', methods = ['GET', 'POST'])
+@login_required
 def demo():
     """
     Render the demo page, which takes both GET and POST requests
@@ -328,25 +240,14 @@ def demo():
 
         # app.logger.info('Select field changed: %s' % request.form['select-changed'])
         # If the default select list has been changed
-        if form_dict.get('select-changed') == 'yes':
-            form_user_id = form_dict.get('select-cohort')
+        # if form_dict.get('select-changed') == 'yes':
+            # form_user_id = form_dict.get('select-cohort')
             # Get the user by its ID in the database
-            user = get_user_by_id(form_user_id)
-        else:
+            # user = get_user_by_id(form_user_id)
+        # else:
             # Get the user's IP address for logging and create a new demo account
-            ip_addr = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
-            user = make_custom_demo_user(form_dict, ip_addr)
-    else:
-        try:
-            # Try getting the current user
-            user = get_user_by_email(current_user.email)
-        except:
-            # On the demo page, default to young working professional
-            user = get_user_by_email('ywp@demo.com')
-
-    # Log in the demo user
-    login_user(user, remember=False)
-    # app.logger.info('Demo user: %s' %str(current_user.email))
+            # ip_addr = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
+            # user = make_custom_demo_user(form_dict, ip_addr)
 
     # Get the account assets for the user for the side bar inputs
     user_accounts = get_user_account_summary(current_user)
@@ -358,12 +259,7 @@ def demo():
     account_categories = configure_account_category_output(user_accounts)
 
     # Get the default demo accounts for the select list
-    demo_users =  get_demo_accounts()
-
-    # Check to see if it's a custom user
-    form_user_id = user.id
-    if form_user_id not in [d_user.id for d_user in demo_users]:
-        form_user_id = get_default_custom_demo_user().id
+    demo_users =  get_demo_users()
 
     # Example suggestions
     suggestions = [
@@ -374,8 +270,7 @@ def demo():
 
     kwargs = {
         'account_categories': account_categories,
-        'demo_users': demo_users,
-        'user_id': int(form_user_id), # This is simply used for display purposes
+        'user_name': current_user.user_name, 
         'net_worth': net_worth,
         'suggestions': suggestions
     }
@@ -383,22 +278,65 @@ def demo():
     return render_template('demo.html', **kwargs)
 
 
+    
+def copy_users_accounts_and_positions(copy_user, new_user):
+    copy_user_accounts = get_user_accounts(copy_user)
+    
+    app.logger.info(copy_user_accounts)
+    
+    user_accounts = []
+    
+    for copy_user_account in copy_user_accounts:
+        account_id = copy_user_account.account_id
+        account = copy_user_account.account
+        user_id = new_user.id
+        
+        positions = []
+        for position in copy_user_account.positions:
+            asset_id = position.asset_id
+            asset = position.asset
+            value = position.value
+            
+            positions.append(AssetPosition.create(asset_id = asset_id, asset = asset, value = value))            
+        
+        user_account = UserAccount.create(account_id = account_id, account = account, 
+            user_id = user_id, positions = positions)
+            
+        user_accounts.append(user_account)
+    
+    new_user.update(user_accounts = user_accounts)
+
+
+    
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     """
     Default registration view
     """
     # If a user is already logged in    
-    # if g.user is not None and g.user.is_authenticated:
-        # return redirect(url_for('home'))
+    if g.user is not None and g.user.is_authenticated:
+        return redirect(url_for('home'))
+    
+    demo_users = get_demo_users()
     
     form = RegistrationForm()
-    if form.validate_on_submit():
+    form.base_profile.choices = unpack_choices([user.user_name for user in demo_users])
     
+    if form.validate_on_submit():
+                
+        base_profile = form.base_profile.data
+        
         dat = {'email': form.email.data,
-                   'password': form.password.data}
+                  'user_name': form.email.data,
+                  'password': form.password.data,
+                  'base_profile': base_profile}
     
         user = User.create(**dat)
+        
+        demo_users = get_demo_users()
+        demo_user = demo_users[base_profile]
+        
+        copy_users_accounts_and_positions(demo_user, user)
         
         login_user(user)
         
@@ -414,7 +352,13 @@ def profile():
     Default registration view
     """
     form = ProfileForm(obj = current_user)
-        
+    
+    form.gender_id.choices = unpack_choices(form_field_choices.get('gender'))
+    form.education_id.choices = unpack_choices(form_field_choices.get('education'))
+    form.financial_advisor_id.choices = unpack_choices(form_field_choices.get('financial_advisor'))
+    form.occupation_id.choices = unpack_choices(form_field_choices.get('occupation'))
+    form.experience_id.choices = unpack_choices(form_field_choices.get('experience'))
+            
     if form.validate_on_submit():
         form.populate_obj(current_user)
         current_user.save()
@@ -440,7 +384,7 @@ def login():
 
         login_user(form.user, remember=form.remember_me.data)
 
-        flash('Login successful for email="%s"' % form.email.data)
+        # flash('Login successful for email="%s"' % form.email.data)
 
         next = request.args.get('next')
         # next_is_valid should check if the user has valid

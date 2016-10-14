@@ -5,7 +5,8 @@ from application import db
 
 # TODO: comments
 # TODO: lazy load? optimize?
- 
+
+    
 class CRUDMixin(object):
     __table_args__ = {'extend_existing': True}
 
@@ -136,22 +137,23 @@ class User(UserMixin, CRUDMixin, db.Model):
     experience_id = db.Column(db.Integer)
     education_id = db.Column(db.Integer)
     financial_advisor_id = db.Column(db.Integer)
+    base_profile = db.Column(db.Integer)
     
     is_demo = db.Column(db.Boolean, default=False)
-    is_custom = db.Column(db.Boolean, default=False)
     
     # One to many mapping that is bidirectional (user has many positions / positions mapped to one user)
     user_accounts = db.relationship('UserAccount', backref='user', lazy='dynamic') 
-        
+    
+    
     @property
     def is_active(self):
-        """True, as all users are active."""
-        return True
+        """All users are active except demo"""
+        return not self.is_demo
         
     @property
     def is_authenticated(self):
-        """Return True if the user is authenticated."""
-        return True
+        """All users are active except demo"""
+        return not self.is_demo
 
     @property
     def is_anonymous(self):

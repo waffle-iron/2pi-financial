@@ -57,6 +57,10 @@ app.logger.info('SQL Alchemy loaded')
 
 # For the navigation bar
 nav = Navigation(app)
+    
+def unpack_choices(choices):
+    # return [(choices[ndx], choices[ndx]) for ndx in xrange(len(choices))]
+    return [(ndx, choices[ndx]) for ndx in xrange(len(choices))]
 
 # Get the form field choices
 form_field_names = ['gender', 'education', 'financial_advisor', 'occupation', 'experience']
@@ -64,23 +68,20 @@ form_field_choices = {}
 for field in form_field_names:
     with open('json/%s.json' %field, 'rb') as fp:
         form_field_choices[field] = json.load(fp)
-        
-from application import views, models, auth
+                
+from models import User, AccountCategory, Account, UserAccount, Asset, AssetPosition
+db.create_all()
+app.logger.info('Data tables created')
 
 # Initialize the login manager
 from auth import login_manager
 login_manager.init_app(app)
 
 # Initialization of the application
-from models import User, Asset, AssetPosition, AccountCategory, Account, UserAccount
-
-
 @app.before_first_request
 def setup():
-    # Recreate database each time for demo
-    db.drop_all() # TODO: remove
-    db.create_all()
-    
+    app.logger.info('Setting up app for first time')
+            
     with open('json/demo_account_categories.json', 'rb') as fp:
         demo_account_categories = json.load(fp)
         
@@ -97,24 +98,33 @@ def setup():
         demo_positions = json.load(fp)
               
     for dac in demo_account_categories:
-        account_cat = AccountCategory.create(account_category_name = dac)
+        account_cat = AccountCategory.query.filter(AccountCategory.account_category_name == dac).first()
+        
+        if not account_cat:        
+            account_cat = AccountCategory.create(account_category_name = dac)
+            
         for da in demo_accounts.get(dac):
             account = Account.create(account_name = da, account_category = account_cat)    
-    
+            
     # Set up each of the demo accounts with positions, etc.
-    for demo_user in demo_users:
-        user = User.create(**demo_user)
+    for d_ndx in xrange(len(demo_users)):
+        demo_user = demo_users[d_ndx]
+        demo_user['base_profile'] = d_ndx
+        
+        user = User.query.filter(User.email == demo_user['email']).first()
+        
+        if not user:
+            user = User.create(**demo_user)
+        else:
+            continue
         
         app.logger.info('Adding demo user: %s' %user)
     
         user_accounts = []
     
         positions_dict = demo_positions.get(user.email)
-    
-        app.logger.info(positions_dict)
         
         # Iterate through the positions in all of the accounts
-        # TODO: here
         for account_cat, accounts in positions_dict.iteritems():
             for account_name, account_positions in accounts.iteritems():
                 app.logger.info('Adding demo account: %s' %account_name)
@@ -125,7 +135,6 @@ def setup():
                 act_positions = []
                 # Add positions
                 for asset_name, position_value in account_positions.iteritems():
-                    app.logger.info('Adding position: %s' %asset_name)
         
                     # Check to see if the asset is already created, if not, create it
                     asset = db.session.query(Asset).filter(Asset.asset_name == asset_name).first()
@@ -139,21 +148,21 @@ def setup():
                     new_position = AssetPosition(asset = asset, value = position_value)
                     db.session.add(new_position)
                     db.session.commit()
+                    app.logger.info('Adding position: %s' %new_position)
                     
                     act_positions.append(new_position)
             
                 # Add the positions list to the user account
-                user_account.positions = act_positions
+                user_account.update(positions = act_positions)
                 # Append the user account to the user now that all the positions have been added
                 user_accounts.append(user_account)
                 
         # Add the list of accounts to the user
-        user.user_accounts = user_accounts
+        user.update(user_accounts = user_accounts)
         
         # Add the user and everything that is attached to it (accounts, positions)
         db.session.commit()
-        
     
+    app.logger.info('Finished one-time setup')
     
-    
-    
+from application import views, auth, models

@@ -9,3 +9,5 @@ application/static/.webassets-cache/
 application/static/css/app.*
 application/static/js/app.*
 
+config.py
+
